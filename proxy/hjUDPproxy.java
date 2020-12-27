@@ -16,10 +16,8 @@ package proxy;
  *       Both configurable in the file config.properties
  */
 
-import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetSocketAddress;
@@ -29,9 +27,7 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import javax.net.ssl.SSLSocket;
-
-import dtls.DTLSImpl;
+import dtls.DTLSSocket;
 
 class hjUDPproxy {
 	public static void main(String[] args) throws Exception {
@@ -57,7 +53,8 @@ class hjUDPproxy {
 		
 		Properties properties = new Properties();
 		properties.load(inputStream);
-		String remote = properties.getProperty("remote");
+		String server = properties.getProperty("server");
+		String proxy = properties.getProperty("proxy");
 		String destinations = properties.getProperty("localdelivery");
 		
 		properties.load(dtlsconf);
@@ -67,31 +64,30 @@ class hjUDPproxy {
 		
 		String[] listCiphers = ciphersuites.split(","); 
 		
-		int port = parsePort(remote);
-		InetSocketAddress inSocketAddress = parseSocketAddress(remote);
+		InetSocketAddress proxySocketAddress = parseSocketAddress(proxy);
+		InetSocketAddress serverSocketAddress = parseSocketAddress(server);
 		Set<SocketAddress> outSocketAddressSet = Arrays.stream(destinations.split(",")).map(s -> parseSocketAddress(s))
 				.collect(Collectors.toSet());
 
+		DatagramSocket inSocket = new DatagramSocket(proxySocketAddress);
 		
-		DTLSImpl imp = null;
+		DTLSSocket imp = null;
 		try {
-			imp = new DTLSImpl(protocol,peerType, authType, listCiphers, ksName, ksPass, inSocketAddress);
+			imp = new DTLSSocket(protocol,peerType, authType, listCiphers, ksName, ksPass, inSocket, serverSocketAddress);
 		} catch(Exception ex) {
 			ex.printStackTrace();
 		}
-		// has to be done internally
-		//DatagramSocket inSocket = new DatagramSocket(inSocketAddress);
-		SSLSocket inSocket = imp.getSocket();
-		inSocket.startHandshake();
-		
-		InputStream sockStream = inSocket.getInputStream();
         
 		DatagramSocket outSocket = new DatagramSocket();
 		byte[] buffer = new byte[4 * 1024];
 		int received = 0;
 		// While there is something to read
-		while ( (received = sockStream.read(buffer)) != -1) {
+		
+		
+		while (true) {
 			DatagramPacket inPacket = new DatagramPacket(buffer, received);
+			
+			imp.receive(inPacket);
 			System.out.print("*");
 			for (SocketAddress outSocketAddress : outSocketAddressSet) {
 				outSocket.send(new DatagramPacket(inPacket.getData(), inPacket.getLength(), outSocketAddress));
