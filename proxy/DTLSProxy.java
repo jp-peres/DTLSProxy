@@ -1,19 +1,7 @@
 package proxy;
-/* hjUDPproxy, 20/Mar/18
- *
- * This is a very simple (transparent) UDP proxy
- * The proxy can listening on a remote source (server) UDP sender
- * and transparently forward received datagram packets in the
- * delivering endpoint
- *
- * Possible Remote listening endpoints:
- *    Unicast IP address and port: configurable in the file config.properties
- *    Multicast IP address and port: configurable in the code
- *  
- * Possible local listening endpoints:
- *    Unicast IP address and port
- *    Multicast IP address and port
- *       Both configurable in the file config.properties
+/* 
+ * Created by
+ * Joao Peres n 48320, Luis Silva 54449
  */
 
 import java.io.FileInputStream;
@@ -29,7 +17,7 @@ import java.util.stream.Collectors;
 
 import dtls.DTLSSocket;
 
-class hjUDPproxy {
+class DTLSProxy {
 	public static void main(String[] args) throws Exception {
 		
 		if (args.length != 4) {
@@ -39,14 +27,14 @@ class hjUDPproxy {
 		InputStream inputStream = null;
 		InputStream dtlsconf = null;
 		try	{
-			inputStream = new FileInputStream("src/main/java/config.properties");
+			inputStream = new FileInputStream("config.properties");
 		}	
 		catch(Exception ex) {
 			System.err.println("config.properties file not found!");
 			System.exit(1);
 		}
 		try {
-			dtlsconf = new FileInputStream("src/main/java/dtls.conf");
+			dtlsconf = new FileInputStream("dtls.conf");
 		} 
 		catch(Exception ex) {
 			System.err.println("dtls.conf file not found!");
@@ -92,7 +80,6 @@ class hjUDPproxy {
 		
 		while (true) {
 			DatagramPacket inPacket = new DatagramPacket(buffer, received);
-			
 			imp.receive(inPacket);
 			System.out.print("*");
 			for (SocketAddress outSocketAddress : outSocketAddressSet) {
