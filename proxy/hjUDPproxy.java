@@ -31,23 +31,31 @@ import dtls.DTLSSocket;
 
 class hjUDPproxy {
 	public static void main(String[] args) throws Exception {
-		InputStream inputStream = new FileInputStream("src/main/java/config.properties");
-		if (inputStream == null) {
+		
+		if (args.length != 4) {
+			System.out.println("Erro, usar: DTLSProxy <keystore-name> <keystore-pass> <truststore-name> <truststore-pass>");
+			System.exit(-1);
+		}
+		InputStream inputStream = null;
+		InputStream dtlsconf = null;
+		try	{
+			inputStream = new FileInputStream("src/main/java/config.properties");
+		}	
+		catch(Exception ex) {
 			System.err.println("config.properties file not found!");
 			System.exit(1);
 		}
-		InputStream dtlsconf = new FileInputStream("src/main/java/dtls.conf");
-		if (dtlsconf == null) {
+		try {
+			dtlsconf = new FileInputStream("src/main/java/dtls.conf");
+		} 
+		catch(Exception ex) {
 			System.err.println("dtls.conf file not found!");
 			System.exit(1);
 		}
-		String ksName = null;
-		String ksPass = null;
-		
-		if (args.length == 2) {
-			ksName = args[0];
-			ksPass = args[1];
-		}
+		String ksName = args[0];
+		String ksPass = args[1];
+		String tsName = args[2];
+		String tsPass = args[3];
 		
 		String peerType = "PROXY";
 		
@@ -73,7 +81,7 @@ class hjUDPproxy {
 		
 		DTLSSocket imp = null;
 		try {
-			imp = new DTLSSocket(protocol,peerType, authType, listCiphers, ksName, ksPass, inSocket, serverSocketAddress);
+			imp = new DTLSSocket(protocol,peerType, authType, listCiphers, ksName, ksPass, tsName,tsPass, inSocket, serverSocketAddress);
 		} catch(Exception ex) {
 			ex.printStackTrace();
 		}
@@ -81,8 +89,6 @@ class hjUDPproxy {
 		DatagramSocket outSocket = new DatagramSocket();
 		byte[] buffer = new byte[4 * 1024];
 		int received = 0;
-		// While there is something to read
-		
 		
 		while (true) {
 			DatagramPacket inPacket = new DatagramPacket(buffer, received);
@@ -100,10 +106,5 @@ class hjUDPproxy {
 		String host = split[0];
 		int port = Integer.parseInt(split[1]);
 		return new InetSocketAddress(host, port);
-	}
-	
-	private static int parsePort(String socketAddress) {
-		String[] split = socketAddress.split(":");
-		return Integer.parseInt(split[1]);
 	}
 }
