@@ -1,7 +1,7 @@
 package proxy;
 /* 
  * Created by
- * Joao Peres n 48320, Luis Silva 54449
+ * Joao Peres n 48320, Luis Silva n 54449
  */
 
 import java.io.FileInputStream;
@@ -20,8 +20,8 @@ import dtls.DTLSSocket;
 class DTLSProxy {
 	public static void main(String[] args) throws Exception {
 		
-		if (args.length != 4) {
-			System.out.println("Erro, usar: DTLSProxy <keystore-name> <keystore-pass> <truststore-name> <truststore-pass>");
+		if (args.length != 7) {
+			System.out.println("Erro, usar: DTLSProxy <proxy-id> <proxy-pass> <movie> <keystore-name> <keystore-pass> <truststore-name> <truststore-pass>");
 			System.exit(-1);
 		}
 		InputStream inputStream = null;
@@ -36,14 +36,17 @@ class DTLSProxy {
 		try {
 			dtlsconf = new FileInputStream("dtls.conf");
 		} 
-		catch(Exception ex) {
+		catch (Exception ex) {
 			System.err.println("dtls.conf file not found!");
 			System.exit(1);
 		}
-		String ksName = args[0];
-		String ksPass = args[1];
-		String tsName = args[2];
-		String tsPass = args[3];
+		String proxyId = args[0];
+		String proxyPass = args[1];
+		String movie = args[2];
+		String ksName = args[3];
+		String ksPass = args[4];
+		String tsName = args[5];
+		String tsPass = args[6];
 		
 		String peerType = "PROXY";
 		
@@ -77,6 +80,10 @@ class DTLSProxy {
 		DatagramSocket outSocket = new DatagramSocket();
 		byte[] buffer = new byte[4 * 1024];
 		int received = 0;
+		
+		byte[] authPayload = imp.generateProxyPassMoviePayload(proxyId, proxyPass, movie);
+		
+		imp.send(authPayload, authPayload.length);
 		
 		while (true) {
 			DatagramPacket inPacket = new DatagramPacket(buffer, received);
